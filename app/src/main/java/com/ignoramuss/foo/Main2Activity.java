@@ -24,6 +24,7 @@ import com.journeyapps.barcodescanner.CompoundBarcodeView;
 
 import java.util.List;
 
+// Using in-built classes from zxing to add barcode scanning
 public class Main2Activity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -67,14 +68,16 @@ public class Main2Activity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        // set beep manager for beeps on successful scans
         beepManager = new BeepManager(this);
-        final Main2Activity activity = this;
+        final Main2Activity currentActivity = this;
 
+        // Use scan button to defer to ContinuousCaptureActivity
         Button scan = (Button) findViewById(R.id.scan_button);
         scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                IntentIntegrator integrator = new IntentIntegrator(activity);
+                IntentIntegrator integrator = new IntentIntegrator(currentActivity);
                 integrator.setCaptureActivity(ContinuousCaptureActivity.class);
                 integrator.setOrientationLocked(false);
                 integrator.initiateScan();

@@ -1,7 +1,7 @@
 package com.ignoramuss.foo;
 
 /**
- * Created by mayan_000 on 04-Mar-17.
+ * Created by ignoramuss on 04-Mar-17.
  */
 
 public class CreateList {

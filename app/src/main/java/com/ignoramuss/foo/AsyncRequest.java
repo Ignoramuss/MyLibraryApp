@@ -20,58 +20,48 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
 /**
- * Created by mayan_000 on 03-Mar-17.
+ * Created by ignoramuss on 03-Mar-17.
+ * Modification of Cyril T's code on AsyncTask from http://cyriltata.blogspot.in/2013/10/android-re-using-asynctask-class-across.html
  */
 
-
+// The first parameterized type is the input to doInBackground().
+// The second is the input to onProgressUpdate(). The third is the
+// input to onPostExecute()
 class AsyncRequest extends AsyncTask<String, Integer, byte[]> {
 
-    OnAsyncRequestComplete caller;
     final static int BUFFER_SIZE = 8192;
-    Context context;
-    String method = "GET";
+    byte[] result;
+    private String method;
 
-    // Two Constructors
-
+    // Default method to GET
     public AsyncRequest() {
-
+        method = "GET";
     }
 
+    // Explicitly specify HTTP method
     public AsyncRequest(String m) {
         method = m;
     }
 
-//    public AsyncRequest(Activity a, String m) {
-//        caller = (OnAsyncRequestComplete) a;
-//        context = a;
-//        method = m;
-//    }
-//
-//    public AsyncRequest(Activity a) {
-//        caller = (OnAsyncRequestComplete) a;
-//        context = a;
-//    }
+    public void onPreExecute() {
 
-    // Interface to be implemented by calling activity
-    public interface OnAsyncRequestComplete {
-        public void asyncResponse(InputStreamReader response);
     }
 
+    // Input is the string url/urls sent through execute method of AsyncRequest
     public byte[] doInBackground(String... urls) {
-        // get url pointing to entry point of API
-        String address = urls[0].toString();
+        // get url
+        String address = urls[0];
         if (method == "POST") {
-            return post(address);
+            result =  post(address);
+            return result;
         }
 
         if (method == "GET") {
-            return get(address);
+            result =  get(address);
+            return result;
         }
 
         return null;
-    }
-
-    public void onPreExecute() {
     }
 
     public void onProgressUpdate(Integer... progress) {
@@ -79,24 +69,15 @@ class AsyncRequest extends AsyncTask<String, Integer, byte[]> {
         // setProgressPercent(progress[0]);
     }
 
-
-    //     public void onPostExecute(InputStreamReader istream) {
-////         caller.asyncResponse(istream);
-//
-//     }
-    public void onPostExecute(byte[] data){
-        try{
-            String response = new String(data, "UTF-8");
-            Log.e("HEREE", response);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+    // Override this method using anonymous classes when you instantiate an object of AsyncRequest
+    // to suit your need
+    public void onPostExecute(byte[] data) {
+        result = data;
     }
 
-//    protected void onCancelled(InputStreamReader istream) {
-//
-//        caller.asyncResponse(istream);
-//    }
+    protected void onCancelled(InputStreamReader istream) {
+
+    }
 
 
     public byte[] get(String address) {
@@ -106,9 +87,9 @@ class AsyncRequest extends AsyncTask<String, Integer, byte[]> {
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             try {
                 InputStream istream = urlConnection.getInputStream();
+                // read data in bytes from inputstream
+                // treating byte data is left to onPostExecute method
                 return readFully(istream);
-//                return istream;
-//                return stringifyResponse(istream);
             }
             finally{
                 urlConnection.disconnect();
@@ -119,6 +100,8 @@ class AsyncRequest extends AsyncTask<String, Integer, byte[]> {
         }
     }
 
+    // Not configured yet. Template given. Also need to modify constructor for
+    // taking parameters for get/post instead of hard coding url in the calling class
     public byte[] post(String address) {
         try {
 
@@ -126,7 +109,7 @@ class AsyncRequest extends AsyncTask<String, Integer, byte[]> {
             byte[] postData       = urlParameters.getBytes( StandardCharsets.UTF_8 );
             int    postDataLength = postData.length;
             String request        = "http://example.com/index.php";
-            URL    url            = new URL( request );
+            URL    url            = new URL( address );
             HttpURLConnection conn= (HttpURLConnection) url.openConnection();
             conn.setDoOutput( true );
             conn.setInstanceFollowRedirects( false );
@@ -179,6 +162,10 @@ class AsyncRequest extends AsyncTask<String, Integer, byte[]> {
             output.write(buffer, 0, bytesRead);
         }
         return output.toByteArray();
+    }
+
+    public byte[] fetchResult(){
+        return result;
     }
 
 }

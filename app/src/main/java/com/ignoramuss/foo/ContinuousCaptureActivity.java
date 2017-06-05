@@ -22,6 +22,7 @@ import com.journeyapps.barcodescanner.DecoratedBarcodeView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 /**
@@ -41,9 +42,8 @@ public class ContinuousCaptureActivity extends Activity {
     final private String API_KEY = BuildConfig.API_KEY;
     final private String serverAPI = BuildConfig.serverAPIAddress;
     final private String API_CALL = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
-    public String bookName, thumbnailURL;
+    public String bookName="", thumbnailURL="";
     public volatile boolean dependency_satisfied = false;
-//    public Bitmap bitmap;
 
     private BarcodeCallback callback = new BarcodeCallback() {
         @Override
@@ -56,51 +56,54 @@ public class ContinuousCaptureActivity extends Activity {
             lastText = result.getText();
             final ImageView imageView = (ImageView) findViewById(R.id.barcodePreview);
             final Bitmap bitmap = result.getBitmapWithResultPoints(Color.YELLOW);
+
             String books_api = API_CALL + result.getText() + "&key=" + API_KEY;
-//            String BookName = new RetrieveFeedTask(API_CALL + result.getText() + "&key=" + API_KEY, result.getText()).retrieve(barcodeView, beepManager, bitmap, imageView);
-            AsyncRequest books_api_call = new AsyncRequest(){
-                @Override
-                public void onPostExecute(byte[] data) {
-                    try{
-                        String response = new String(data, "UTF-8");
-                        if(response == null){
-                            bookName = "Unknown Book";
-                        } else {
-                            JSONObject result = new JSONObject(response);
-                            JSONArray items = result.getJSONArray("items");
-                            if(items != null){
-                                JSONObject jsonObject = items.getJSONObject(0);
-                                bookName = jsonObject.getJSONObject("volumeInfo").optString("title");
-                                thumbnailURL = jsonObject.getJSONObject("volumeInfo").getJSONObject("imageLinks").optString("thumbnail");
-                            }
-
-                        }
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
-                    finally {
-                        barcodeView.setStatusText(bookName);
-                        beepManager.playBeepSoundAndVibrate();
-                        imageView.setImageBitmap(bitmap);
-                        String server_request = serverAPI + "cgi-bin/store_in_database.py?ISBN=" + result.getText();
-                        AsyncRequest server_call = new AsyncRequest();
-                        server_call.execute(server_request);
-                        AsyncRequest image_retrieve = new AsyncRequest(){
-                            @Override
-                            public void onPostExecute(byte[] data) {
-                                Bitmap thumbnail = BitmapFactory.decodeByteArray(data, 0, data.length);
-                                if(thumbnail != null){
-                                    imageView.setImageBitmap(thumbnail);
-                                }
-                            }
-                        };
-                        image_retrieve.execute(thumbnailURL);
-                    }
-                }
-            };
+            String StringifiedResponse = "";
+            AsyncRequest books_api_call = new AsyncRequest();
             books_api_call.execute(books_api);
+            byte[] HTTPResponse = books_api_call.fetchResult();
 
+            JSONObject JSONresult;
+            JSONArray items;
+            JSONObject jsonObject;
+            try{
+                StringifiedResponse = new String(HTTPResponse, "UTF-8");
+                JSONresult = new JSONObject(StringifiedResponse);
+                items = JSONresult.getJSONArray("items");
+                if(items != null){
+                    jsonObject = items.getJSONObject(0);
+                    bookName = jsonObject.getJSONObject("volumeInfo").optString("title");
+                    thumbnailURL = jsonObject.getJSONObject("volumeInfo").getJSONObject("imageLinks").optString("thumbnail");
+                }
+            }catch (Exception e){
+                bookName = "Unknown Book";
+                e.printStackTrace();
+            }
+            finally {
+                barcodeView.setStatusText(bookName);
+                beepManager.playBeepSoundAndVibrate();
+                imageView.setImageBitmap(bitmap);
+
+                String server_request = serverAPI + "cgi-bin/store_in_database.py?ISBN=" + result.getText();
+                AsyncRequest server_call = new AsyncRequest();
+                server_call.execute(server_request);
+
+                AsyncRequest image_retrieve = new AsyncRequest();
+                if(!thumbnailURL.equals("")){
+                    image_retrieve.execute(thumbnailURL);
+                    byte[] HTTPImageResponse = image_retrieve.fetchResult();
+                    Bitmap thumbnail = BitmapFactory.decodeByteArray(HTTPImageResponse, 0, HTTPImageResponse.length);
+                    if(thumbnail != null){
+                        imageView.setImageBitmap(thumbnail);
+                    }
+                } else{
+                    Log.e("HEREEE", StringifiedResponse);
+                }
+
+
+            }
         }
+
 
         @Override
         public void possibleResultPoints(List<ResultPoint> resultPoints) {
@@ -129,8 +132,7 @@ public class ContinuousCaptureActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-
-//        barcodeView.resume();
+        barcodeView.resume();
     }
 
     @Override

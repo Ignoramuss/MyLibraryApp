@@ -1,12 +1,12 @@
 package com.ignoramuss.foo;
 
 /**
- * Created by mayan_000 on 04-Mar-17.
+ * Created by ignoramuss on 04-Mar-17.
  */
 
 public class ServerDatabaseAPI {
 
-    final private String SERVER_ADDRESS = "http://ignoramuss.dlinkddns.com:5119/cgi-bin/";
+    final private String SERVER_ADDRESS = BuildConfig.serverAPIAddress;
 
     public ServerDatabaseAPI(){
 
